@@ -12,18 +12,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM registry.access.redhat.com/ubi7-dev-preview/ubi-minimal:7.6
+FROM registry.access.redhat.com/ubi8/ubi:latest
 
-ENV OPERATOR=/usr/local/bin/eunomia-operator \
-    USER_UID=1001 \
-    USER_NAME=eunomia-operator
+ENV OPERATOR=/usr/local/bin/eunomia-operator
 
 # install operator binary
-COPY build/_output/bin/eunomia ${OPERATOR}
-
-COPY build/bin /usr/local/bin
-RUN  /usr/local/bin/user_setup
+COPY _output/bin/eunomia ${OPERATOR}
 
 ENTRYPOINT ["/usr/local/bin/entrypoint"]
-
-USER ${USER_UID}

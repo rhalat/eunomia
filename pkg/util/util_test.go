@@ -22,8 +22,8 @@ import (
 	"testing"
 	"text/template"
 
-	"github.com/dchest/uniuri"
 	gitopsv1alpha1 "github.com/KohlsTechnology/eunomia/pkg/apis/eunomia/v1alpha1"
+	"github.com/dchest/uniuri"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -71,7 +71,7 @@ var fullconfig = JobMergeData{
 	},
 }
 
-const templateFile string = "../../templates/job.yaml"
+const templateFile string = "../../deploy/helm/eunomia-operator/job-templates/job.yaml"
 
 func TestFullConfig(t *testing.T) {
 	text, err := ioutil.ReadFile(templateFile)

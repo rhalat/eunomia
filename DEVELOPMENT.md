@@ -5,8 +5,7 @@
 In order to build Eunomia, you'll need the following:
 
 - [Git](https://git-scm.com/downloads)
-- [Go](https://golang.org/dl/)
-- [Dep](https://golang.github.io/dep/docs/installation.html)
+- [Go 1.12+](https://golang.org/dl/)
 - [Docker](https://docs.docker.com/install/)
 - [Operator SDK v0.8.1](https://github.com/operator-framework/operator-sdk/blob/v0.8.1/doc/user/install-operator-sdk.md)
 - Access to a Kubernetes cluster
@@ -34,7 +33,6 @@ All the components can easily be installed via [Homebrew](https://brew.sh/) on a
 ```shell
 brew install git
 brew install go
-brew install dep
 brew install docker
 brew install operator-sdk
 brew install minikube
@@ -48,13 +46,16 @@ The most efficient way to develop the operator locally is run the code on your l
 ```
 minikube start
 kubectl apply -f ./deploy/crds/eunomia_v1alpha1_gitopsconfig_crd.yaml
-export JOB_TEMPLATE=./templates/job.yaml
-export CRONJOB_TEMPLATE=./templates/cronjob.yaml
+export JOB_TEMPLATE=./deploy/helm/eunomia-operator/job-templates/job.yaml
+export CRONJOB_TEMPLATE=./deploy/helm/eunomia-operator/job-templates/cronjob.yaml
 export WATCH_NAMESPACE=""
 export OPERATOR_NAME=eunomia-operator
-dep ensure
-operator-sdk up local
+export GO111MODULE=on
+go mod vendor
+operator-sdk up local --namespace="${WATCH_NAMESPACE}"
 ```
+
+Setting WATCH_NAMESPACE to empty string, as above, results in Eunomia watching all namespaces. If you want a particular namespace to be watched, set it explicitly in the env variable.
 
 ## Building the Operator Image
 
@@ -64,10 +65,9 @@ The Eunomia operator gets packaged as a container image for running on Kubernete
 
 See https://golang.org/doc/install to install/setup your Go Programming environment if you have not already done this.
 
-Run "dep ensure" before building code. (if this is your first time running this use "dep ensure -v" ,this will take some time to complete.)
-
 ```shell
-dep ensure
+export GO111MODULE=on
+go mod vendor
 GOOS=linux operator-sdk build eunomia-operator
 ```
 
@@ -80,7 +80,7 @@ Run the following to build and push the images:
 ```shell
 export REGISTRY=<your registry>
 docker login $REGISTRY
-./build-images.sh
+./scripts/build-images.sh
 ```
 
 ## Testing
@@ -90,12 +90,11 @@ docker login $REGISTRY
 Here are some preliminary instructions. This still needs a lot of TLC. Feel free to send in PRs.
 
 ```shell
+# Start minikube
 minikube start
-kubectl create namespace eunomia
-kubectl apply -f ./deploy/crds/eunomia_v1alpha1_gitopsconfig_crd.yaml -n eunomia
-kubectl delete configmap gitops-templates -n eunomia
-kubectl create configmap gitops-templates --from-file=./templates/cronjob.yaml --from-file=./templates/job.yaml -n eunomia
-kubectl apply -f ./deploy/kubernetes -n eunomia
+
+# Deploy the operator
+helm template deploy/helm/eunomia-operator/ | kubectl apply -f -
 ```
 
 ### Using Openshift
@@ -103,11 +102,8 @@ kubectl apply -f ./deploy/kubernetes -n eunomia
 Here are some preliminary instructions. This still needs a lot of TLC. Feel free to send in PRs.
 
 ```shell
-oc create namespace eunomia
-oc apply -f ./deploy/crds/gitops_v1alpha1_gitopsconfig_crd.yaml -n eunomia
-oc delete configmap gitops-templates -n eunomia
-oc create configmap gitops-templates --from-file=./templates/cronjob.yaml --from-file=./templates/job.yaml -n eunomia
-oc apply -f ./deploy/kubernetes -f ./deploy/openshift -n eunomia
+# Deploy the operator
+helm template deploy/helm/eunomia-operator/ --set eunomia.openshift.route.enabled=true | oc apply -f -
 ```
 
 ## Run Tests
@@ -115,13 +111,18 @@ oc apply -f ./deploy/kubernetes -f ./deploy/openshift -n eunomia
 For testing and CI purposes, we manage several set of tests. These tests can be run locally by following the below instructions. All test scripts assume that you are already logged into your minikube cluster.
 
 ### Running Unit Tests
-
 ```shell
-./unit-tests.sh
+make test-unit
 ```
 
 ### Running End-to-End Tests
-
 ```shell
-./e2e-tests.sh
+# Optional: Set the environment variable $EUNOMIA_URI to point to a specific git url for testing
+# Optional: Set the environment variable $EUNOMIA_REF to point to a specific git reference for testing
+make test-e2e
+```
+
+### Running All Tests
+```shell
+make test
 ```

@@ -19,28 +19,22 @@ package e2e
 import (
 	goctx "context"
 	"fmt"
-	gitopsv1alpha1 "gitops-operator/pkg/apis/eunomia/v1alpha1"
-	test "gitops-operator/test"
+	"os"
 	"testing"
-	"time"
 
+	gitopsv1alpha1 "github.com/KohlsTechnology/eunomia/pkg/apis/eunomia/v1alpha1"
+	test "github.com/KohlsTechnology/eunomia/test"
 	framework "github.com/operator-framework/operator-sdk/pkg/test"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
 )
 
-var (
-	retryInterval        = time.Second * 5
-	timeout              = time.Second * 60
-	cleanupRetryInterval = time.Second * 1
-	cleanupTimeout       = time.Second * 5
-	name                 = "gitops"
-)
-
-func TestOCPTemplate(t *testing.T) {
+/*
+DISABLED
+TODO create a make file and have a specific minihift-e2e-test, the below  test does not work with minikube.
+*/
+func disabledOCPTemplate(t *testing.T) {
 	ctx := framework.NewTestCtx(t)
 	defer ctx.Cleanup()
-	//test.Initialize()
 	test.AddToFrameworkSchemeForTests(t, ctx)
 	if err := ocpTemplateTestDeploy(t, framework.Global, ctx); err != nil {
 		t.Fatal(err)
@@ -53,25 +47,35 @@ func ocpTemplateTestDeploy(t *testing.T, f *framework.Framework, ctx *framework.
 		return fmt.Errorf("could not get namespace: %v", err)
 	}
 
+	eunomiaURI, found := os.LookupEnv("EUNOMIA_URI")
+	if !found {
+		eunomiaURI = "https://github.com/kohlstechnology/eunomia"
+	}
+
+	eunomiaRef, found := os.LookupEnv("EUNOMIA_REF")
+	if !found {
+		eunomiaRef = "master"
+	}
+
 	gitops := &gitopsv1alpha1.GitOpsConfig{
 		TypeMeta: metav1.TypeMeta{
 			Kind:       "GitOpsConfig",
 			APIVersion: "eunomia.kohls.io/v1alpha1",
 		},
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      "gitops",
+			Name:      "gitops-ocp",
 			Namespace: namespace,
 		},
 		Spec: gitopsv1alpha1.GitOpsConfigSpec{
 			TemplateSource: gitopsv1alpha1.GitConfig{
-				URI:        "https://github.com/KohlsTechnology/eunomia",
-				Ref:        "master",
-				ContextDir: "example/templates",
+				URI:        eunomiaURI,
+				Ref:        eunomiaRef,
+				ContextDir: "test/e2e/configs/simple/templates",
 			},
 			ParameterSource: gitopsv1alpha1.GitConfig{
-				URI:        "https://github.com/KohlsTechnology/eunomia",
-				Ref:        "master",
-				ContextDir: "example/parameters",
+				URI:        eunomiaURI,
+				Ref:        eunomiaRef,
+				ContextDir: "test/e2e/configs/simple/parameters",
 			},
 			Triggers: []gitopsv1alpha1.GitOpsTrigger{
 				{
@@ -79,9 +83,9 @@ func ocpTemplateTestDeploy(t *testing.T, f *framework.Framework, ctx *framework.
 				},
 			},
 			ResourceDeletionMode:   "Delete",
-			TemplateProcessorImage: "quay.io/kohlstechnology/eunomia-ocp-templates:v0.0.1",
+			TemplateProcessorImage: " quay.io/kohlstechnology/eunomia-ocp-templates:dev",
 			ResourceHandlingMode:   "CreateOrMerge",
-			ServiceAccountRef:      "gitops-operator",
+			ServiceAccountRef:      "eunomia-operator",
 		},
 	}
 	gitops.Annotations = map[string]string{"gitopsconfig.eunomia.kohls.io/initialized": "true"}
@@ -91,10 +95,5 @@ func ocpTemplateTestDeploy(t *testing.T, f *framework.Framework, ctx *framework.
 		return err
 	}
 
-	// Check if the CRD has been created
-	crd := &gitopsv1alpha1.GitOpsConfig{}
-	err = f.Client.Get(goctx.TODO(), types.NamespacedName{Name: "gitops", Namespace: namespace}, crd)
-	fmt.Printf("test %v+", crd)
-
-	return WaitForPod(t, f, ctx, namespace, "hello-openshift", retryInterval, timeout)
+	return WaitForPod(t, f, ctx, namespace, "helloworld", retryInterval, timeout)
 }
