@@ -4,14 +4,14 @@ metadata:
   name: hello-world-helm
 spec:
   templateSource:
-    uri: https://github.com/KohlsTechnology/eunomia
+    uri: https://github.com/rhalat/eunomia
     ref: master
     contextDir: examples/hello-world-helm/templates
   parameterSource:
     ref: master
     contextDir: examples/hello-world-helm/parameters1
   triggers:
-  - type: Change
+  - type: Webhook
   #- type: Periodic
     #cron: '*/1 * * * *'
   serviceAccountRef: eunomia-runner
