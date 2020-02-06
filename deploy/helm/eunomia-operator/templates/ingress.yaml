@@ -1,5 +1,5 @@
 {{- with .Values.eunomia.operator }}
-{{- if .ingress.enabled -}}
+{{- if and .ingress.enabled (not .deployment.nsRbacOnly) -}}
 apiVersion: extensions/v1beta1
 kind: Ingress
 metadata:
@@ -27,10 +27,10 @@ spec:
       http:
         paths:
         {{- range .paths }}
-          - path: {{ . }}
+          - path: {{ .path }}
             backend:
               serviceName: eunomia-operator
-              servicePort: http
+              servicePort: {{ .portName }}
         {{- end }}
   {{- end }}
 {{- end }}

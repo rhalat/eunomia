@@ -1,3 +1,4 @@
+{{- if not .Values.eunomia.operator.deployment.nsRbacOnly -}}
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
@@ -16,10 +17,18 @@ rules:
   - ''
   resources:
   - namespaces
+  - pods
   verbs:
   - get
   - list
   - watch  # needed by k8s.io/client-go/tools/cache
+# needed by operator to be able to emit events
+- apiGroups:
+  - ''
+  resources:
+  - events
+  verbs:
+  - create
 # operator's resources  
 - apiGroups:
   - eunomia.kohls.io
@@ -27,3 +36,4 @@ rules:
   - '*'
   verbs:
   - '*'
+{{- end }}

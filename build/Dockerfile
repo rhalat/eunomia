@@ -16,7 +16,14 @@ FROM registry.access.redhat.com/ubi8/ubi:latest
 
 ENV OPERATOR=/usr/local/bin/eunomia-operator
 
+# include default job-templates
+COPY job-templates/* /default-job-templates/
+
 # install operator binary
 COPY _output/bin/eunomia ${OPERATOR}
 
-ENTRYPOINT ["/usr/local/bin/entrypoint"]
+RUN groupadd -r eunomia && useradd --no-log-init -r -g eunomia eunomia
+
+USER eunomia
+
+ENTRYPOINT ["/usr/local/bin/eunomia-operator"]
