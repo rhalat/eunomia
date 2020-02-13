@@ -9,7 +9,7 @@ spec:
     contextDir: examples/hello-world-helm/templates
   parameterSource:
     ref: master
-    contextDir: examples/hello-world-helm/parameters1
+    contextDir: examples/hello-world-helm/parameters2
   triggers:
   - type: Webhook
   #- type: Periodic
